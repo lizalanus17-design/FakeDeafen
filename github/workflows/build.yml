@@ -1,0 +1,30 @@
+name: Build FakeDeafen
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin
+      - run: git clone --depth=1 https://github.com/Aliucord/AliucordNative template
+      - run: |
+          mkdir -p template/plugins/FakeDeafen
+          cp -r plugin/src template/plugins/FakeDeafen/
+          cp plugin/build.gradle template/plugins/FakeDeafen/
+      - run: echo 'include ":plugins:FakeDeafen"' >> template/settings.gradle
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+      - name: Build
+        working-directory: template
+        run: ./gradlew :plugins:FakeDeafen:make --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FakeDeafen
+          path: template/plugins/FakeDeafen/build/outputs/FakeDeafen.zip
+          if-no-files-found: error
