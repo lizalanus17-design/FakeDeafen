@@ -12,21 +12,12 @@ jobs:
           path: plugin
 
       - name: Clone plugins-template
-        run: |
-          git clone --depth=1 \
-            https://github.com/Aliucord/plugins-template \
-            template
+        run: git clone --depth=1 https://github.com/Aliucord/plugins-template template
 
       - name: Copy plugin
         run: |
-          mkdir -p template/FakeDeafen/src/main/java/com/aliucord/plugins
-          cp -r plugin/src/main/java/com/aliucord/plugins/FakeDeafen.java \
-            template/FakeDeafen/src/main/java/com/aliucord/plugins/
-          cp plugin/build.gradle.kts template/FakeDeafen/
-
-      - name: Register plugin in settings
-        run: |
-          echo 'include(":FakeDeafen")' >> template/settings.gradle.kts
+          cp -r plugin/src template/plugin/
+          cp plugin/build.gradle.kts template/plugin/
 
       - uses: actions/setup-java@v4
         with:
@@ -35,10 +26,10 @@ jobs:
 
       - name: Build
         working-directory: template
-        run: ./gradlew :FakeDeafen:make --no-daemon
+        run: ./gradlew :plugin:make --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: FakeDeafen
-          path: template/FakeDeafen/build/outputs/FakeDeafen.zip
+          path: template/plugin/build/outputs/*.zip
           if-no-files-found: error
