@@ -1,0 +1,11 @@
+version = "1.0.0"
+
+aliucord {
+    pluginClassName = "com.aliucord.plugins.FakeDeafen"
+    changelog = """
+        ## 1.0.0
+        - Fake Deafen: appear deafened, still hear everyone
+        - Fake Mute: appear muted, mic stays active
+        - Auto-apply both on voice channel join
+    """.trimIndent()
+}
