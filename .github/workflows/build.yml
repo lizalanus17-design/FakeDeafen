@@ -8,37 +8,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: plugin
-
-      - name: Clone plugins-template
-        run: |
-          git clone --depth=1 --branch main \
-            https://github.com/Aliucord/plugins-template \
-            template
-
-      - name: Copy plugin into template
-        run: |
-          mkdir -p template/plugins/FakeDeafen/src/main/java/com/aliucord/plugins
-          cp plugin/src/main/java/com/aliucord/plugins/FakeDeafen.java \
-            template/plugins/FakeDeafen/src/main/java/com/aliucord/plugins/
-          cp plugin/build.gradle.kts template/plugins/FakeDeafen/
-
-      - name: Register plugin in settings
-        run: |
-          echo 'include(":plugins:FakeDeafen")' >> template/settings.gradle.kts
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '11'
           distribution: 'temurin'
 
-      - name: Build
-        working-directory: template
-        run: ./gradlew :plugins:FakeDeafen:make --no-daemon
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Download deps
+        run: |
+          mkdir -p libs
+          curl -L "https://maven.aliucord.com/snapshots/com/aliucord/discord-stubs/126021/discord-stubs-126021.jar" \
+               -o libs/discord-stubs.jar
+          curl -L "https://maven.aliucord.com/snapshots/com/aliucord/Aliucord/maven-metadata.xml" -o /tmp/ameta.xml
+          AVER=$(grep -oP '(?<=<latest>)[^<]+' /tmp/ameta.xml)
+          curl -L "https://maven.aliucord.com/snapshots/com/aliucord/Aliucord/$AVER/Aliucord-$AVER.jar" \
+               -o libs/aliucord.jar
+
+      - name: Compile
+        run: |
+          mkdir -p build/classes
+          javac -source 11 -target 11 \
+            -cp "libs/discord-stubs.jar:libs/aliucord.jar" \
+            -d build/classes \
+            src/main/java/com/aliucord/plugins/FakeDeafen.java
+
+      - name: Create manifest
+        run: |
+          cat > build/manifest.json << 'EOF'
+          {"name":"FakeDeafen","version":"1.0.0","description":"Fake deafen/mute","authors":[{"name":"You","id":0}],"pluginClassName":"com.aliucord.plugins.FakeDeafen"}
+          EOF
+
+      - name: Package
+        run: |
+          cd build/classes && jar cf ../classes.jar . && cd ../..
+          BTVER=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          $ANDROID_HOME/build-tools/$BTVER/d8 --output build/ build/classes.jar
+          cd build && zip FakeDeafen.zip classes.dex manifest.json
 
       - uses: actions/upload-artifact@v4
         with:
           name: FakeDeafen
-          path: template/plugins/FakeDeafen/builds/outputs/FakeDeafen.zip
+          path: build/FakeDeafen.zip
           if-no-files-found: error
