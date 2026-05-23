@@ -10,21 +10,35 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: plugin
-      - run: git clone --depth=1 https://github.com/Aliucord/AliucordNative template
-      - run: |
-          mkdir -p template/plugins/FakeDeafen
-          cp -r plugin/src template/plugins/FakeDeafen/
-          cp plugin/build.gradle template/plugins/FakeDeafen/
-      - run: echo 'include ":plugins:FakeDeafen"' >> template/settings.gradle
+
+      - name: Clone plugins-template
+        run: |
+          git clone --depth=1 \
+            https://github.com/Aliucord/plugins-template \
+            template
+
+      - name: Copy plugin
+        run: |
+          mkdir -p template/FakeDeafen/src/main/java/com/aliucord/plugins
+          cp -r plugin/src/main/java/com/aliucord/plugins/FakeDeafen.java \
+            template/FakeDeafen/src/main/java/com/aliucord/plugins/
+          cp plugin/build.gradle.kts template/FakeDeafen/
+
+      - name: Register plugin in settings
+        run: |
+          echo 'include(":FakeDeafen")' >> template/settings.gradle.kts
+
       - uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '21'
           distribution: 'temurin'
+
       - name: Build
         working-directory: template
-        run: ./gradlew :plugins:FakeDeafen:make --no-daemon
+        run: ./gradlew :FakeDeafen:make --no-daemon
+
       - uses: actions/upload-artifact@v4
         with:
           name: FakeDeafen
-          path: template/plugins/FakeDeafen/build/outputs/FakeDeafen.zip
+          path: template/FakeDeafen/build/outputs/FakeDeafen.zip
           if-no-files-found: error
